@@ -32,6 +32,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class DayForecastsActivity extends AppCompatActivity
 {
     private String forecastsDateString;
+    private Date checkingDate;
     private ActivityDayForecastsBinding binding;
     private PostPlaces place;
     private PostPlacesForecasts postPlacesForecasts;
@@ -168,7 +169,6 @@ public class DayForecastsActivity extends AppCompatActivity
             if(extras.containsKey("dayForecasts")) {
                 dayForecasts = (List<ForecastTimestamp>) extras.getSerializable("dayForecasts");
 
-                setUpHourCastElements();
                 //cacheSingleInfo(MainActivity.this.getApplicationContext(), placeInfo, place);
             }
             else
@@ -186,9 +186,11 @@ public class DayForecastsActivity extends AppCompatActivity
 
             if(extras.containsKey("dayDate"))
             {
-                Date day = (Date) extras.getSerializable("dayDate");
-                setDefaultAverageValues(day);
+                checkingDate = (Date) extras.getSerializable("dayDate");
+                setDefaultAverageValues(checkingDate);
             }
+
+            setUpHourCastElements();
         }
         else
         {
@@ -245,31 +247,46 @@ public class DayForecastsActivity extends AppCompatActivity
         if(postPlacesForecasts != null && dayForecasts != null)
         {
             int dayForecastsSize = dayForecasts.size();
-            int hourDiff = 1;
 
             SimpleDateFormat exactTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-            if(dayForecasts.size() > 1)
-            {
-                Date firstDate = MainActivity.stringToDate(dayForecasts.get(0).getForecastTimeUtc(), exactTime);
-                Date secondDate = MainActivity.stringToDate(dayForecasts.get(1).getForecastTimeUtc(), exactTime);
+            Date d;
 
-                hourDiff = getHourOfDay(secondDate) - getHourOfDay(firstDate);
+            if(dayForecastsSize > 1)
+            {
+                addDayCastElement("B", checkingDate, null, true);
             }
 
             for(int currentHourElement = 0; currentHourElement < dayForecastsSize; currentHourElement++)
             {
-                View view = getLayoutInflater().inflate(R.layout.day_cast, null);
-                ViewGroup dayBox = (ViewGroup) view;
-
-                Button hourButton = (Button) dayBox.getChildAt(0);
-                hourButton.setText(Integer.toString(currentHourElement * hourDiff));
-
-                setHourBoxOnClickEvent(hourButton, MainActivity.stringToDate(dayForecasts.get(currentHourElement).getForecastTimeUtc(), exactTime), dayForecasts.get(currentHourElement));
-
-                binding.hourLinearLayout.addView(view);
+                d = MainActivity.stringToDate(dayForecasts.get(currentHourElement).getForecastTimeUtc(), exactTime);
+                addDayCastElement(Integer.toString(getHourOfDay(d)), d,
+                        dayForecasts.get(currentHourElement), false);
             }
         }
+    }
+
+    private void addDayCastElement(String nameButton, Date dayInfo, ForecastTimestamp forecastTimestamp, Boolean isGeneralCast)
+    {
+        View view = getLayoutInflater().inflate(R.layout.day_cast, null);
+        ViewGroup dayBox = (ViewGroup) view;
+
+        Button hourButton = (Button) dayBox.getChildAt(0);
+        hourButton.setText(nameButton);
+
+        if(isGeneralCast)
+        {
+            setGeneralHourBoxOnClickEvent(hourButton, dayInfo);
+        }
+        else
+        {
+            if(forecastTimestamp != null)
+            {
+                setHourBoxOnClickEvent(hourButton, dayInfo, forecastTimestamp);
+            }
+        }
+
+        binding.hourLinearLayout.addView(view);
     }
 
     int getHourOfDay(Date date) {
@@ -286,6 +303,19 @@ public class DayForecastsActivity extends AppCompatActivity
             public void onClick(View view)
             {
                 setValues(day, dayTimestamp);
+            }
+        });
+    }
+
+    private void setGeneralHourBoxOnClickEvent(final Button btn,  final Date day)
+    {
+        btn.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View view)
+            {
+                Log.d("karosas", day.toString());
+                setDefaultAverageValues(day);
             }
         });
     }
